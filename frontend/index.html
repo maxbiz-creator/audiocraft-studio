@@ -999,12 +999,12 @@
                 </div>
                 <form class="form-container" onsubmit="handleAuth(event, 'login')">
                     <div class="form-group">
-                        <label class="form-label">Email Address</label>
-                        <input type="email" class="form-input" placeholder="your@email.com" required>
+                        <label class="form-label" for="login-email">Email Address</label>
+                        <input type="email" class="form-input" placeholder="your@email.com" required id="login-email" name="email">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Password</label>
-                        <input type="password" class="form-input" placeholder="Enter your password" required>
+                        <label class="form-label" for="login-password">Password</label>
+                        <input type="password" class="form-input" placeholder="Enter your password" required id="login-password" name="password">
                     </div>
                     <button type="submit" class="form-btn">Sign In</button>
                 </form>
@@ -1021,16 +1021,16 @@
                 </div>
                 <form class="form-container" onsubmit="handleAuth(event, 'signup')">
                     <div class="form-group">
-                        <label class="form-label">Email Address</label>
-                        <input type="email" class="form-input" placeholder="your@email.com" required>
+                        <label class="form-label" for="signup-email">Email Address</label>
+                        <input type="email" class="form-input" placeholder="your@email.com" required id="signup-email" name="email">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Create Password</label>
-                        <input type="password" class="form-input" placeholder="Choose a secure password" required>
+                        <label class="form-label" for="signup-password">Create Password</label>
+                        <input type="password" class="form-input" placeholder="Choose a secure password" required id="signup-password" name="password">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Confirm Password</label>
-                        <input type="password" class="form-input" placeholder="Confirm your password" required>
+                        <label class="form-label" for="signup-confirm">Confirm Password</label>
+                        <input type="password" class="form-input" placeholder="Confirm your password" required id="signup-confirm" name="confirmPassword">
                     </div>
                     <button type="submit" class="form-btn">Get 3 Free Tracks</button>
                 </form>
@@ -1272,37 +1272,46 @@
         let enhancedBlob = null;
         let selectedPlan = 'annual';
 
-        // UI Elements
-        const elements = {
-            guestNav: document.getElementById('guestNav'),
-            userNav: document.getElementById('userNav'),
-            userStatus: document.getElementById('userStatus'),
-            userEmail: document.getElementById('userEmail'),
-            authModal: document.getElementById('authModal'),
-            subscriptionModal: document.getElementById('subscriptionModal'),
-            loginForm: document.getElementById('loginForm'),
-            signupForm: document.getElementById('signupForm'),
-            signupPrompt: document.getElementById('signupPrompt'),
-            trialIndicator: document.getElementById('trialIndicator'),
-            uploadArea: document.getElementById('uploadArea'),
-            fileInput: document.getElementById('fileInput'),
-            audioComparison: document.getElementById('audioComparison'),
-            enhancementControls: document.getElementById('enhancementControls'),
-            originalAudio: document.getElementById('originalAudio'),
-            enhancedAudio: document.getElementById('enhancedAudio'),
-            enhancedPlayerCard: document.getElementById('enhancedPlayerCard'),
-            enhancedStatus: document.getElementById('enhancedStatus'),
-            progressSection: document.getElementById('progressSection'),
-            progressFill: document.getElementById('progressFill'),
-            progressText: document.getElementById('progressText'),
-            statusMessage: document.getElementById('statusMessage'),
-            enhanceBtn: document.getElementById('enhanceBtn'),
-            downloadBtn: document.getElementById('downloadBtn'),
-            pitchValue: document.getElementById('pitchValue'),
-            tempoValue: document.getElementById('tempoValue'),
-            warmthValue: document.getElementById('warmthValue'),
-            reverbValue: document.getElementById('reverbValue')
-        };
+        // UI Elements - Wait for DOM to load before accessing
+        let elements = {};
+
+        // Initialize elements after DOM loads
+        function initializeElements() {
+            elements = {
+                guestNav: document.getElementById('guestNav'),
+                userNav: document.getElementById('userNav'),
+                userStatus: document.getElementById('userStatus'),
+                userEmail: document.getElementById('userEmail'),
+                authModal: document.getElementById('authModal'),
+                subscriptionModal: document.getElementById('subscriptionModal'),
+                loginForm: document.getElementById('loginForm'),
+                signupForm: document.getElementById('signupForm'),
+                signupPrompt: document.getElementById('signupPrompt'),
+                trialIndicator: document.getElementById('trialIndicator'),
+                uploadArea: document.getElementById('uploadArea'),
+                fileInput: document.getElementById('fileInput'),
+                audioComparison: document.getElementById('audioComparison'),
+                enhancementControls: document.getElementById('enhancementControls'),
+                originalAudio: document.getElementById('originalAudio'),
+                enhancedAudio: document.getElementById('enhancedAudio'),
+                enhancedPlayerCard: document.getElementById('enhancedPlayerCard'),
+                enhancedStatus: document.getElementById('enhancedStatus'),
+                progressSection: document.getElementById('progressSection'),
+                progressFill: document.getElementById('progressFill'),
+                progressText: document.getElementById('progressText'),
+                statusMessage: document.getElementById('statusMessage'),
+                enhanceBtn: document.getElementById('enhanceBtn'),
+                downloadBtn: document.getElementById('downloadBtn'),
+                pitchValue: document.getElementById('pitchValue'),
+                tempoValue: document.getElementById('tempoValue'),
+                warmthValue: document.getElementById('warmthValue'),
+                reverbValue: document.getElementById('reverbValue'),
+                pitchSlider: document.getElementById('pitchSlider'),
+                tempoSlider: document.getElementById('tempoSlider'),
+                warmthSlider: document.getElementById('warmthSlider'),
+                reverbSlider: document.getElementById('reverbSlider')
+            };
+        }
 
         // Authentication Functions
         function showModal(type, mode = null) {
@@ -1390,6 +1399,8 @@
         }
 
         function updateUIForUser() {
+            if (!elements.guestNav || !elements.userNav) return;
+            
             elements.guestNav.style.display = 'none';
             elements.userNav.style.display = 'flex';
             elements.signupPrompt.style.display = 'none';
@@ -1416,6 +1427,8 @@
         }
 
         function updateUIForGuest() {
+            if (!elements.guestNav || !elements.userNav) return;
+            
             elements.guestNav.style.display = 'flex';
             elements.userNav.style.display = 'none';
             elements.signupPrompt.style.display = 'block';
@@ -1674,46 +1687,45 @@
             });
         }
 
-   // Control Sliders
-function setupControls() {
-    // Safety check - make sure elements exist
-    if (!elements.pitchValue || !elements.tempoValue || !elements.warmthValue || !elements.reverbValue) {
-        console.log('Slider elements not ready yet');
-        return;
-    }
+        // Control Sliders
+        function setupControls() {
+            if (!elements.pitchValue || !elements.tempoValue || !elements.warmthValue || !elements.reverbValue) {
+                console.log('Slider elements not ready yet');
+                return;
+            }
 
-    const sliderMappings = {
-        pitchSlider: (value) => {
-            if (elements.pitchValue) {
-                elements.pitchValue.textContent = (value >= 0 ? '+' : '') + value + ' semi';
-            }
-        },
-        tempoSlider: (value) => {
-            if (elements.tempoValue) {
-                const percent = ((value - 100) * 100) / 100;
-                elements.tempoValue.textContent = (percent >= 0 ? '+' : '') + percent.toFixed(1) + '%';
-            }
-        },
-        warmthSlider: (value) => {
-            if (elements.warmthValue) {
-                elements.warmthValue.textContent = value + '%';
-            }
-        },
-        reverbSlider: (value) => {
-            if (elements.reverbValue) {
-                elements.reverbValue.textContent = value + '%';
-            }
-        }
-    };
+            const sliderMappings = {
+                pitchSlider: (value) => {
+                    if (elements.pitchValue) {
+                        elements.pitchValue.textContent = (value >= 0 ? '+' : '') + value + ' semi';
+                    }
+                },
+                tempoSlider: (value) => {
+                    if (elements.tempoValue) {
+                        const percent = ((value - 100) * 100) / 100;
+                        elements.tempoValue.textContent = (percent >= 0 ? '+' : '') + percent.toFixed(1) + '%';
+                    }
+                },
+                warmthSlider: (value) => {
+                    if (elements.warmthValue) {
+                        elements.warmthValue.textContent = value + '%';
+                    }
+                },
+                reverbSlider: (value) => {
+                    if (elements.reverbValue) {
+                        elements.reverbValue.textContent = value + '%';
+                    }
+                }
+            };
 
-    Object.entries(sliderMappings).forEach(([sliderId, updateFn]) => {
-        const slider = document.getElementById(sliderId);
-        if (slider) {
-            slider.addEventListener('input', (e) => updateFn(e.target.value));
-            updateFn(slider.value); // Initialize
+            Object.entries(sliderMappings).forEach(([sliderId, updateFn]) => {
+                const slider = document.getElementById(sliderId);
+                if (slider) {
+                    slider.addEventListener('input', (e) => updateFn(e.target.value));
+                    updateFn(slider.value); // Initialize
+                }
+            });
         }
-    });
-}
 
         function applyPreset(type, value) {
             const sliderMap = {
@@ -1732,6 +1744,8 @@ function setupControls() {
 
         // Status Messages
         function showStatus(message, type) {
+            if (!elements.statusMessage) return;
+            
             elements.statusMessage.textContent = message;
             elements.statusMessage.className = `status-message ${type}`;
             elements.statusMessage.style.display = 'block';
@@ -1739,7 +1753,9 @@ function setupControls() {
         }
 
         function hideStatus() {
-            elements.statusMessage.style.display = 'none';
+            if (elements.statusMessage) {
+                elements.statusMessage.style.display = 'none';
+            }
         }
 
         // Event Listeners
@@ -1765,6 +1781,7 @@ function setupControls() {
 
         // Initialize Application
         function initializeApp() {
+            initializeElements();
             setupFileHandling();
             setupEnhanceButton();
             setupDownloadButton();
