@@ -966,191 +966,6 @@
     </style>
 </head>
 <body>
-    <!-- API Integration Script - IMPORTANT: Update the API_BASE URL after deployment! -->
-    <script>
-    // API Configuration - CHANGE THIS TO YOUR RAILWAY URL AFTER DEPLOYMENT
-    const API_BASE = window.location.hostname === 'localhost' 
-        ? 'http://localhost:5000/api' 
-        : ''https://audiocraft-backend-production.up.railway.app/api';/'; // <- UPDATE THIS WITH YOUR ACTUAL RAILWAY URL!
-
-    // Store auth token
-    let authToken = localStorage.getItem('authToken');
-
-    // Override the handleAuth function to connect to backend
-    async function handleAuth(event, type) {
-        event.preventDefault();
-        const formData = new FormData(event.target);
-        const email = event.target.querySelector('input[type="email"]').value;
-        const passwords = event.target.querySelectorAll('input[type="password"]');
-        const password = passwords[0].value;
-
-        // For signup, check if passwords match
-        if (type === 'signup' && passwords.length > 1) {
-            const confirmPassword = passwords[1].value;
-            if (password !== confirmPassword) {
-                showStatus('Passwords do not match', 'error');
-                return;
-            }
-        }
-
-        try {
-            const response = await fetch(`${API_BASE}/auth/${type}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Authentication failed');
-            }
-
-            // Store token
-            authToken = data.token;
-            localStorage.setItem('authToken', authToken);
-
-            // Update user state
-            currentUser = data.user;
-            updateUIForUser();
-            hideModal('auth');
-            
-            if (type === 'signup') {
-                showStatus('Account created! You have 3 free audio enhancements.', 'success');
-            } else {
-                showStatus(`Welcome back! ${currentUser.freeTracksLeft} free enhancements remaining.`, 'success');
-            }
-        } catch (error) {
-            showStatus(error.message || `${type === 'signup' ? 'Signup' : 'Login'} failed`, 'error');
-        }
-    }
-
-    // Override processAudioEnhancement function to use backend
-    async function processAudioEnhancement() {
-        if (!authToken) {
-            showModal('auth', 'login');
-            return;
-        }
-
-        elements.enhanceBtn.disabled = true;
-        elements.enhanceBtn.textContent = 'Processing...';
-        elements.progressSection.style.display = 'block';
-        elements.progressFill.style.width = '0%';
-        hideStatus();
-
-        try {
-            // Prepare form data
-            const formData = new FormData();
-            formData.append('audio', currentFile);
-            formData.append('settings', JSON.stringify({
-                pitch: parseFloat(document.getElementById('pitchSlider').value),
-                tempo: parseFloat(document.getElementById('tempoSlider').value),
-                warmth: parseFloat(document.getElementById('warmthSlider').value),
-                reverb: parseFloat(document.getElementById('reverbSlider').value)
-            }));
-
-            // Simulate progress
-            const progressInterval = setInterval(() => {
-                const currentWidth = parseInt(elements.progressFill.style.width) || 0;
-                if (currentWidth < 85) {
-                    elements.progressFill.style.width = (currentWidth + 12) + '%';
-                }
-            }, 250);
-
-            // Send to backend
-            const response = await fetch(`${API_BASE}/audio/enhance`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                },
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Processing failed');
-            }
-
-            clearInterval(progressInterval);
-            elements.progressFill.style.width = '100%';
-
-            // Update UI
-            enhancedBlob = currentFile; // In production, this would be the processed file
-            const enhancedUrl = URL.createObjectURL(enhancedBlob);
-            
-            elements.enhancedAudio.src = enhancedUrl;
-            elements.enhancedAudio.disabled = false;
-            elements.enhancedPlayerCard.style.opacity = '1';
-            elements.enhancedStatus.textContent = 'Enhancement complete';
-            elements.downloadBtn.style.display = 'inline-block';
-
-            // Update credits
-            currentUser.freeTracksLeft = data.creditsRemaining;
-            elements.userStatus.textContent = `${currentUser.freeTracksLeft} free left`;
-
-            if (currentUser.freeTracksLeft === 0) {
-                currentUser.trialExpired = true;
-                setTimeout(() => {
-                    showModal('subscription');
-                }, 3000);
-            }
-
-            elements.enhanceBtn.textContent = 'Enhancement Complete!';
-            elements.enhanceBtn.style.background = 'linear-gradient(45deg, #10b981, #059669)';
-            showStatus('Audio enhancement complete! Compare the results below.', 'success');
-
-            setTimeout(() => {
-                elements.enhanceBtn.disabled = false;
-                elements.enhanceBtn.textContent = 'Enhance Audio';
-                elements.enhanceBtn.style.background = '';
-            }, 3000);
-
-        } catch (error) {
-            console.error('Enhancement error:', error);
-            showStatus(error.message || 'Enhancement failed. Please try again.', 'error');
-            elements.enhanceBtn.disabled = false;
-            elements.enhanceBtn.textContent = 'Enhance Audio';
-        }
-
-        elements.progressSection.style.display = 'none';
-    }
-
-    // Override signOut to clear token
-    function signOut() {
-        authToken = null;
-        currentUser = null;
-        localStorage.removeItem('authToken');
-        updateUIForGuest();
-        showStatus('Successfully signed out', 'info');
-        resetInterface();
-    }
-
-    // Check auth on page load
-    window.addEventListener('DOMContentLoaded', async () => {
-        if (authToken) {
-            try {
-                const response = await fetch(`${API_BASE}/auth/verify`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    currentUser = data.user;
-                    updateUIForUser();
-                } else {
-                    authToken = null;
-                    localStorage.removeItem('authToken');
-                }
-            } catch (error) {
-                console.error('Auth check failed:', error);
-                authToken = null;
-                localStorage.removeItem('authToken');
-            }
-        }
-    });
-    </script>
-
     <!-- Navigation -->
     <nav class="nav-header">
         <div class="nav-logo">AudioCraft Studio</div>
@@ -1445,7 +1260,13 @@
     </div>
 
     <script>
+        // API Configuration - UPDATE WITH YOUR BACKEND URL
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000/api' 
+            : 'https://audiocraft-backend-production.up.railway.app/api';
+
         // Application State
+        let authToken = localStorage.getItem('authToken');
         let currentUser = null;
         let currentFile = null;
         let enhancedBlob = null;
@@ -1476,7 +1297,11 @@
             progressText: document.getElementById('progressText'),
             statusMessage: document.getElementById('statusMessage'),
             enhanceBtn: document.getElementById('enhanceBtn'),
-            downloadBtn: document.getElementById('downloadBtn')
+            downloadBtn: document.getElementById('downloadBtn'),
+            pitchValue: document.getElementById('pitchValue'),
+            tempoValue: document.getElementById('tempoValue'),
+            warmthValue: document.getElementById('warmthValue'),
+            reverbValue: document.getElementById('reverbValue')
         };
 
         // Authentication Functions
@@ -1507,18 +1332,75 @@
             }
         }
 
+        async function handleAuth(event, type) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const email = event.target.querySelector('input[type="email"]').value;
+            const passwords = event.target.querySelectorAll('input[type="password"]');
+            const password = passwords[0].value;
+
+            // For signup, check if passwords match
+            if (type === 'signup' && passwords.length > 1) {
+                const confirmPassword = passwords[1].value;
+                if (password !== confirmPassword) {
+                    showStatus('Passwords do not match', 'error');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/${type}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Authentication failed');
+                }
+
+                // Store token
+                authToken = data.token;
+                localStorage.setItem('authToken', authToken);
+
+                // Update user state
+                currentUser = data.user;
+                updateUIForUser();
+                hideModal('auth');
+                
+                if (type === 'signup') {
+                    showStatus('Account created! You have 3 free audio enhancements.', 'success');
+                } else {
+                    showStatus(`Welcome back! ${currentUser.freeTracksLeft} free enhancements remaining.`, 'success');
+                }
+            } catch (error) {
+                showStatus(error.message || `${type === 'signup' ? 'Signup' : 'Login'} failed`, 'error');
+            }
+        }
+
+        function signOut() {
+            authToken = null;
+            currentUser = null;
+            localStorage.removeItem('authToken');
+            updateUIForGuest();
+            showStatus('Successfully signed out', 'info');
+            resetInterface();
+        }
+
         function updateUIForUser() {
             elements.guestNav.style.display = 'none';
             elements.userNav.style.display = 'flex';
             elements.signupPrompt.style.display = 'none';
             elements.userEmail.textContent = currentUser.email;
 
-            if (currentUser.hasSubscription) {
+            if (currentUser.subscription && currentUser.subscription.status === 'active') {
                 elements.userStatus.textContent = 'Pro Subscriber';
                 elements.userStatus.className = 'user-status subscribed';
                 elements.trialIndicator.style.display = 'none';
                 elements.uploadArea.classList.remove('disabled');
-            } else if (currentUser.trialExpired) {
+            } else if (currentUser.freeTracksLeft === 0) {
                 elements.userStatus.textContent = 'Trial Used';
                 elements.userStatus.className = 'user-status expired';
                 elements.uploadArea.classList.add('disabled');
@@ -1552,6 +1434,9 @@
                 <div class="upload-text">Drop your audio file here</div>
                 <div class="upload-hint">Supports MP3, WAV, M4A files up to 100MB</div>
             `;
+            if (elements.fileInput) {
+                elements.fileInput.value = '';
+            }
         }
 
         // Subscription Functions
@@ -1569,8 +1454,7 @@
             
             // Simulate successful subscription
             if (currentUser) {
-                currentUser.hasSubscription = true;
-                currentUser.trialExpired = false;
+                currentUser.subscription = { status: 'active' };
                 updateUIForUser();
                 hideModal('subscription');
                 showStatus('Subscription activated! Enjoy unlimited enhancements.', 'success');
@@ -1586,7 +1470,7 @@
                     showModal('auth', 'signup');
                     return;
                 }
-                if (currentUser.trialExpired && !currentUser.hasSubscription) {
+                if (currentUser.freeTracksLeft === 0 && (!currentUser.subscription || currentUser.subscription.status !== 'active')) {
                     showModal('subscription');
                     return;
                 }
@@ -1612,7 +1496,7 @@
                     showModal('auth', 'signup');
                     return;
                 }
-                if (currentUser.trialExpired && !currentUser.hasSubscription) {
+                if (currentUser.freeTracksLeft === 0 && (!currentUser.subscription || currentUser.subscription.status !== 'active')) {
                     showModal('subscription');
                     return;
                 }
@@ -1674,18 +1558,102 @@
             elements.enhanceBtn.addEventListener('click', async () => {
                 if (!currentFile || !currentUser) return;
 
-                if (currentUser.trialExpired && !currentUser.hasSubscription) {
-                    showModal('subscription');
-                    return;
-                }
-
-                if (!currentUser.hasSubscription && currentUser.freeTracksLeft <= 0) {
+                if (currentUser.freeTracksLeft === 0 && (!currentUser.subscription || currentUser.subscription.status !== 'active')) {
                     showModal('subscription');
                     return;
                 }
 
                 await processAudioEnhancement();
             });
+        }
+
+        async function processAudioEnhancement() {
+            if (!authToken) {
+                showModal('auth', 'login');
+                return;
+            }
+
+            elements.enhanceBtn.disabled = true;
+            elements.enhanceBtn.textContent = 'Processing...';
+            elements.progressSection.style.display = 'block';
+            elements.progressFill.style.width = '0%';
+            hideStatus();
+
+            try {
+                // Prepare form data
+                const formData = new FormData();
+                formData.append('audio', currentFile);
+                formData.append('settings', JSON.stringify({
+                    pitch: parseFloat(document.getElementById('pitchSlider').value),
+                    tempo: parseFloat(document.getElementById('tempoSlider').value),
+                    warmth: parseFloat(document.getElementById('warmthSlider').value),
+                    reverb: parseFloat(document.getElementById('reverbSlider').value)
+                }));
+
+                // Simulate progress
+                const progressInterval = setInterval(() => {
+                    const currentWidth = parseInt(elements.progressFill.style.width) || 0;
+                    if (currentWidth < 85) {
+                        elements.progressFill.style.width = (currentWidth + 12) + '%';
+                    }
+                }, 250);
+
+                // Send to backend
+                const response = await fetch(`${API_BASE}/audio/enhance`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Processing failed');
+                }
+
+                clearInterval(progressInterval);
+                elements.progressFill.style.width = '100%';
+
+                // Update UI
+                enhancedBlob = currentFile; // In production, this would be the processed file
+                const enhancedUrl = URL.createObjectURL(enhancedBlob);
+                
+                elements.enhancedAudio.src = enhancedUrl;
+                elements.enhancedAudio.disabled = false;
+                elements.enhancedPlayerCard.style.opacity = '1';
+                elements.enhancedStatus.textContent = 'Enhancement complete';
+                elements.downloadBtn.style.display = 'inline-block';
+
+                // Update credits
+                currentUser.freeTracksLeft = data.creditsRemaining;
+                elements.userStatus.textContent = `${currentUser.freeTracksLeft} free left`;
+
+                if (currentUser.freeTracksLeft === 0) {
+                    setTimeout(() => {
+                        showModal('subscription');
+                    }, 3000);
+                }
+
+                elements.enhanceBtn.textContent = 'Enhancement Complete!';
+                elements.enhanceBtn.style.background = 'linear-gradient(45deg, #10b981, #059669)';
+                showStatus('Audio enhancement complete! Compare the results below.', 'success');
+
+                setTimeout(() => {
+                    elements.enhanceBtn.disabled = false;
+                    elements.enhanceBtn.textContent = 'Enhance Audio';
+                    elements.enhanceBtn.style.background = '';
+                }, 3000);
+
+            } catch (error) {
+                console.error('Enhancement error:', error);
+                showStatus(error.message || 'Enhancement failed. Please try again.', 'error');
+                elements.enhanceBtn.disabled = false;
+                elements.enhanceBtn.textContent = 'Enhance Audio';
+            }
+
+            elements.progressSection.style.display = 'none';
         }
 
         // Download Function
@@ -1717,10 +1685,10 @@
                     elements.tempoValue.textContent = (percent >= 0 ? '+' : '') + percent.toFixed(1) + '%';
                 },
                 warmthSlider: (value) => {
-                    document.getElementById('warmthValue').textContent = value + '%';
+                    elements.warmthValue.textContent = value + '%';
                 },
                 reverbSlider: (value) => {
-                    document.getElementById('reverbValue').textContent = value + '%';
+                    elements.reverbValue.textContent = value + '%';
                 }
             };
 
@@ -1791,8 +1759,31 @@
             updateUIForGuest();
         }
 
-        // Start the application
-        document.addEventListener('DOMContentLoaded', initializeApp);
+        // Check auth on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            initializeApp();
+            
+            if (authToken) {
+                try {
+                    const response = await fetch(`${API_BASE}/auth/verify`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        currentUser = data.user;
+                        updateUIForUser();
+                    } else {
+                        authToken = null;
+                        localStorage.removeItem('authToken');
+                    }
+                } catch (error) {
+                    console.error('Auth check failed:', error);
+                    authToken = null;
+                    localStorage.removeItem('authToken');
+                }
+            }
+        });
     </script>
 </body>
 </html>
