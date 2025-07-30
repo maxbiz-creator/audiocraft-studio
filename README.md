@@ -25,4 +25,4 @@ Professional audio enhancement web application with AI-powered processing.
 - `FRONTEND_URL` - Your frontend Railway URL
 - `NODE_ENV` - Set to "production"
 
-## Created with ❤️ by AudioCraft Studio
+## Created with ❤️ by AudioCraft Studio 
