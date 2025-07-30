@@ -1674,32 +1674,46 @@
             });
         }
 
-        // Control Sliders
-        function setupControls() {
-            const sliderMappings = {
-                pitchSlider: (value) => {
-                    elements.pitchValue.textContent = (value >= 0 ? '+' : '') + value + ' semi';
-                },
-                tempoSlider: (value) => {
-                    const percent = ((value - 100) * 100) / 100;
-                    elements.tempoValue.textContent = (percent >= 0 ? '+' : '') + percent.toFixed(1) + '%';
-                },
-                warmthSlider: (value) => {
-                    elements.warmthValue.textContent = value + '%';
-                },
-                reverbSlider: (value) => {
-                    elements.reverbValue.textContent = value + '%';
-                }
-            };
+   // Control Sliders
+function setupControls() {
+    // Safety check - make sure elements exist
+    if (!elements.pitchValue || !elements.tempoValue || !elements.warmthValue || !elements.reverbValue) {
+        console.log('Slider elements not ready yet');
+        return;
+    }
 
-            Object.entries(sliderMappings).forEach(([sliderId, updateFn]) => {
-                const slider = document.getElementById(sliderId);
-                if (slider) {
-                    slider.addEventListener('input', (e) => updateFn(e.target.value));
-                    updateFn(slider.value); // Initialize
-                }
-            });
+    const sliderMappings = {
+        pitchSlider: (value) => {
+            if (elements.pitchValue) {
+                elements.pitchValue.textContent = (value >= 0 ? '+' : '') + value + ' semi';
+            }
+        },
+        tempoSlider: (value) => {
+            if (elements.tempoValue) {
+                const percent = ((value - 100) * 100) / 100;
+                elements.tempoValue.textContent = (percent >= 0 ? '+' : '') + percent.toFixed(1) + '%';
+            }
+        },
+        warmthSlider: (value) => {
+            if (elements.warmthValue) {
+                elements.warmthValue.textContent = value + '%';
+            }
+        },
+        reverbSlider: (value) => {
+            if (elements.reverbValue) {
+                elements.reverbValue.textContent = value + '%';
+            }
         }
+    };
+
+    Object.entries(sliderMappings).forEach(([sliderId, updateFn]) => {
+        const slider = document.getElementById(sliderId);
+        if (slider) {
+            slider.addEventListener('input', (e) => updateFn(e.target.value));
+            updateFn(slider.value); // Initialize
+        }
+    });
+}
 
         function applyPreset(type, value) {
             const sliderMap = {
