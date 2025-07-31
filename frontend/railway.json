@@ -1,0 +1,8 @@
+{
+  "build": {
+    "builder": "STATIC"
+  },
+  "deploy": {
+    "startCommand": "python3 -m http.server $PORT"
+  }
+}
